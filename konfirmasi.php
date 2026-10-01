@@ -1,6 +1,6 @@
 <?php
-// konfirmasi.php
 session_start();
+include("connection.php");
 
 // Redirect jika tidak ada pesanan
 if (!isset($_SESSION['orders']) || empty($_SESSION['orders'])) {
@@ -8,285 +8,207 @@ if (!isset($_SESSION['orders']) || empty($_SESSION['orders'])) {
     exit;
 }
 
-// Hitung total dari session jika ada
 $total = isset($_SESSION['total']) ? $_SESSION['total'] : 0;
+
+$user_email = '';
+if (isset($_SESSION['email']) && !empty($_SESSION['email'])) {
+    $user_email = $_SESSION['email'];
+} elseif (isset($_SESSION['user_id'])) {
+    $uid = (int)$_SESSION['user_id'];
+    $res = mysqli_query($link, "SELECT email FROM users WHERE id = $uid");
+    if ($res && mysqli_num_rows($res) > 0) {
+        $row = mysqli_fetch_assoc($res);
+        $user_email = $row['email'];
+        $_SESSION['email'] = $user_email; // cache it
+    }
+}
+
+// Handle form submission (Checkout)
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $nama = mysqli_real_escape_string($link, $_POST['nama']);
+    $email = mysqli_real_escape_string($link, $_POST['email']);
+    $metode = mysqli_real_escape_string($link, $_POST['payment_method']);
+    
+    // Generate unique Order ID
+    $order_id_str = 'ORD-' . date('Ymd') . '-' . strtoupper(substr(uniqid(), -5));
+    
+    mysqli_begin_transaction($link);
+    try {
+        $query = "INSERT INTO orders (order_id, nama_pelanggan, email, metode_pembayaran, total_harga, status) 
+                  VALUES ('$order_id_str', '$nama', '$email', '$metode', $total, 'Baru Masuk')";
+        if (!mysqli_query($link, $query)) throw new Exception(mysqli_error($link));
+        
+        $order_pk = mysqli_insert_id($link);
+        
+        foreach ($_SESSION['orders'] as $item => $details) {
+            $nama_item = mysqli_real_escape_string($link, ucwords(str_replace('_', ' ', $item)));
+            $jumlah = (int)$details['quantity'];
+            $harga = (float)$details['price'];
+            $subtotal = (float)$details['total'];
+            
+            $q_item = "INSERT INTO order_items (order_id, nama_item, jumlah, harga_satuan, subtotal) 
+                       VALUES ($order_pk, '$nama_item', $jumlah, $harga, $subtotal)";
+            if (!mysqli_query($link, $q_item)) throw new Exception(mysqli_error($link));
+        }
+        
+        mysqli_commit($link);
+        
+        unset($_SESSION['orders']);
+        unset($_SESSION['total']);
+        
+        header("Location: invoice.php?id=" . $order_id_str);
+        exit;
+        
+    } catch (Exception $e) {
+        mysqli_rollback($link);
+        $error = "Terjadi kesalahan: " . $e->getMessage();
+    }
+}
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Konfirmasi Pembayaran - Sinar Minang SMEA</title>
-    <link rel="stylesheet" href="./CSS/menu.css">
-    <link rel="icon" href="./Gambar/sinar_minang_smea.png">
+    <title>Checkout - Sinar Minang SMEA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            background-color: #FFEBEE;
-            font-family: 'Poppins', sans-serif;
-        }
-
-        .payment-container {
-            max-width: 800px;
-            margin: 30px auto;
-            padding: 30px;
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .payment-method {
-            margin-bottom: 30px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-        }
-
-        input, select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 16px;
-        }
-
-        .card-details {
-            display: none;
-            margin-top: 20px;
-            padding: 20px;
-            background-color: #f9f9f9;
-            border-radius: 8px;
-        }
-
-        .qris-container {
-            display: none;
-            text-align: center;
-            margin-top: 20px;
-        }
-
-        .qris-container img {
-            max-width: 250px;
-            margin-bottom: 10px;
-        }
-
-        .order-summary {
-            margin-top: 30px;
-        }
-
-        .order-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-        }
-
-        .order-table th, .order-table td {
-            padding: 12px 15px;
-            text-align: left;
-            border-bottom: 1px solid #FFCDD2;
-        }
-
-        .order-table th {
-            background-color: #C62828;
-            color: white;
-        }
-
-        .total-row {
-            font-weight: bold;
-            background-color: #FFEBEE;
-        }
-
-        .btn {
-            padding: 12px 24px;
-            background-color: #C62828;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: background-color 0.3s;
-            text-decoration: none;
-            display: inline-block;
-        }
-
-        .btn:hover {
-            background-color: #8E0000;
-        }
-
-        .btn-confirm {
-            background-color: #4CAF50;
-            width: 100%;
-            margin-top: 20px;
-        }
-
-        .btn-confirm:hover {
-            background-color: #388E3C;
-        }
-
-        .navbar {
-            background-color: #C62828;
-            padding: 15px 0;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-
-        .nav-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 20px;
-        }
-
-        .brand {
-            color: white;
-            font-size: 24px;
-            font-weight: bold;
-            text-decoration: none;
-        }
-
-        .nav-menu {
-            display: flex;
-            list-style: none;
-        }
-
-        .nav-menu li {
-            margin-left: 20px;
-        }
-
-        .nav-menu a {
-            color: white;
-            text-decoration: none;
-            font-weight: 500;
-            transition: color 0.3s;
-        }
-
-        .nav-menu a:hover {
-            color: #FFCDD2;
-        }
-
-        .logout-btn {
-            color: white;
-            text-decoration: none;
-            font-weight: 500;
-            padding: 8px 16px;
-            border-radius: 4px;
-            background-color: #8E0000;
-        }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .spinner { border-top-color: #ef4444; animation: spinner 1s linear infinite; }
+        @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
-<body>
-    <nav class="navbar">
-        <div class="nav-container">
-            <a href="index.html" class="brand">Sinar Minang SMEA</a>
-            <ul class="nav-menu">
-                <li><a href="indeks.php">Beranda</a></li>
-                <li><a href="menu.php">Menu</a></li>
-                <li><a href="#contact">Kontak</a></li>
-            </ul>
-            <div class="nav-right">
-                <a href="logout.php" class="logout-btn">Logout</a>
+<body class="bg-slate-50 text-slate-800 min-h-screen">
+
+    <nav class="bg-white/80 backdrop-blur-md sticky top-0 z-40 border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-20 items-center">
+                <a href="index.php" class="text-2xl font-bold text-red-600 flex items-center gap-2">
+                    Sinar Minang
+                </a>
             </div>
         </div>
     </nav>
 
-    <div class="payment-container">
-        <h1>Konfirmasi Pembayaran</h1>
-        
-        <div class="form-group">
-            <label for="email">Email</label>
-            <input type="email" id="email" placeholder="Masukkan email Anda" required>
-        </div>
-        
-        <div class="payment-method">
-            <label for="payment-method">Metode Pembayaran:</label>
-            <select id="payment-method" onchange="togglePaymentDetails()">
-                <option value="tunai">Bayar Tunai</option>
-                <option value="debit">Kartu Debit</option>
-                <option value="qris">QRIS</option>
-            </select>
-            
-            <div id="card-details" class="card-details">
-                <div class="form-group">
-                    <label>Nama pada Kartu</label>
-                    <input type="text" placeholder="Nama lengkap">
-                </div>
-                <div class="form-group">
-                    <label>Nomor Kartu</label>
-                    <input type="text" placeholder="1234 5678 9012 3456">
-                </div>
-                <div class="form-group">
-                    <label>Tanggal Kadaluarsa</label>
-                    <input type="text" placeholder="MM/YY">
-                </div>
-                <div class="form-group">
-                    <label>CVV</label>
-                    <input type="text" placeholder="123">
-                </div>
-            </div>
-            
-            <div id="qris-container" class="qris-container">
-                <img src="qris_dummy.png" alt="QR Code Pembayaran">
-                <p>Scan QR code di atas menggunakan aplikasi e-wallet Anda</p>
-            </div>
-        </div>
-        
-        <div class="order-summary">
-            <h2>Ringkasan Pesanan</h2>
-            <table class="order-table">
-                <thead>
-                    <tr>
-                        <th>Item</th>
-                        <th>Jumlah</th>
-                        <th>Harga Satuan</th>
-                        <th>Subtotal</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($_SESSION['orders'] as $item => $details): ?>
-                        <tr>
-                            <td><?php echo ucwords(str_replace('_', ' ', $item)); ?></td>
-                            <td><?php echo $details['quantity']; ?></td>
-                            <td>Rp<?php echo number_format($details['price'], 0, ',', '.'); ?></td>
-                            <td>Rp<?php echo number_format($details['total'], 0, ',', '.'); ?></td>
-                        </tr>
-                    <?php endforeach; ?>
-                    <tr class="total-row">
-                        <td colspan="3"><strong>Total:</strong></td>
-                        <td><strong>Rp<?php echo number_format($total, 0, ',', '.'); ?></strong></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        
-        <button class="btn btn-confirm" onclick="processPayment()">Konfirmasi Pembayaran</button>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-white/95 z-50 hidden flex-col items-center justify-center">
+        <div class="spinner border-4 border-slate-200 rounded-full w-16 h-16 mb-4"></div>
+        <h2 class="text-2xl font-bold text-slate-800">Memverifikasi Pembayaran...</h2>
+        <p class="text-slate-500 mt-2">Mohon tunggu sebentar, jangan tutup halaman ini.</p>
     </div>
 
+    <main class="max-w-4xl mx-auto px-4 py-12">
+        <div class="mb-8">
+            <a href="order.php" class="text-sm font-medium text-slate-500 hover:text-red-600 flex items-center gap-1 transition">
+                &larr; Kembali ke Keranjang
+            </a>
+        </div>
+
+        <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="p-8">
+                <h1 class="text-3xl font-bold text-slate-900 mb-8">Checkout Pesanan</h1>
+                
+                <?php if(isset($error)): ?>
+                    <div class="bg-red-50 text-red-600 p-4 rounded-xl mb-8"><?= $error ?></div>
+                <?php endif; ?>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                    
+                    <!-- Form Kolom Kiri -->
+                    <div>
+                        <form id="checkoutForm" method="POST" action="konfirmasi.php" class="space-y-6">
+                            
+                            <div>
+                                <h2 class="text-lg font-bold text-slate-800 mb-4 border-b pb-2">Informasi Akun</h2>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">Nama Lengkap</label>
+                                        <input type="text" name="nama" value="<?= isset($_SESSION['nama']) ? htmlspecialchars($_SESSION['nama']) : '' ?>" readonly class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-500 cursor-not-allowed outline-none">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">Alamat Email (Tujuan Struk)</label>
+                                        <input type="email" name="email" value="<?= htmlspecialchars($user_email) ?>" readonly class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-500 cursor-not-allowed outline-none">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <h2 class="text-lg font-bold text-slate-800 mb-4 border-b pb-2">Pembayaran</h2>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Pilih Metode</label>
+                                    <select name="payment_method" id="paymentMethod" onchange="toggleQris()" required class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all appearance-none bg-slate-50">
+                                        <option value="Tunai">Bayar di Kasir (Tunai)</option>
+                                        <option value="QRIS">QRIS / E-Wallet (OVO, Gopay, Dana)</option>
+                                        <option value="Transfer Bank">Transfer Bank Virtual Account</option>
+                                    </select>
+                                </div>
+                                
+                                <div id="qrisBox" class="hidden mt-6 text-center p-6 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-300">
+                                    <p class="font-bold text-slate-800 mb-4">Scan QR Code Berikut</p>
+                                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=SinarMinangSMEA_DummyQRIS" alt="QRIS" class="mx-auto rounded-xl shadow-sm mb-4">
+                                    <p class="text-sm text-slate-500">Gunakan aplikasi m-banking atau e-wallet pilihan Anda.</p>
+                                </div>
+                            </div>
+
+                        </form>
+                    </div>
+
+                    <!-- Order Summary Kolom Kanan -->
+                    <div>
+                        <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200 h-full flex flex-col">
+                            <h2 class="text-lg font-bold text-slate-800 mb-4 border-b border-slate-200 pb-2">Ringkasan Pesanan</h2>
+                            
+                            <div class="space-y-4 mb-6 flex-1">
+                                <?php foreach ($_SESSION['orders'] as $item => $details): ?>
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <p class="font-semibold text-slate-800"><?php echo ucwords(str_replace('_', ' ', $item)); ?></p>
+                                            <p class="text-sm text-slate-500"><?php echo $details['quantity']; ?>x @ Rp <?php echo number_format($details['price'], 0, ',', '.'); ?></p>
+                                        </div>
+                                        <p class="font-bold text-slate-800">Rp <?php echo number_format($details['total'], 0, ',', '.'); ?></p>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                            
+                            <div class="border-t border-slate-200 pt-4 mb-6">
+                                <div class="flex justify-between items-center text-lg">
+                                    <span class="font-medium text-slate-600">Total Bayar</span>
+                                    <span class="font-extrabold text-2xl text-red-600">Rp <?php echo number_format($total, 0, ',', '.'); ?></span>
+                                </div>
+                            </div>
+                            
+                            <button type="button" onclick="processCheckout()" class="w-full py-4 rounded-xl bg-red-600 font-bold text-white text-lg hover:bg-red-700 shadow-lg shadow-red-200 transition-all flex justify-center items-center gap-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                Bayar Sekarang
+                            </button>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+    </main>
+
     <script>
-        function togglePaymentDetails() {
-            const method = document.getElementById('payment-method').value;
-            const cardDetails = document.getElementById('card-details');
-            const qrisContainer = document.getElementById('qris-container');
-            
-            cardDetails.style.display = method === 'debit' ? 'block' : 'none';
-            qrisContainer.style.display = method === 'qris' ? 'block' : 'none';
+        function toggleQris() {
+            const method = document.getElementById('paymentMethod').value;
+            document.getElementById('qrisBox').classList.toggle('hidden', method !== 'QRIS');
         }
         
-        function processPayment() {
-            const email = document.getElementById('email').value;
-            
-            if (!email) {
-                alert('Harap masukkan email Anda');
+        function processCheckout() {
+            const form = document.getElementById('checkoutForm');
+            if (!form.checkValidity()) {
+                form.reportValidity();
                 return;
             }
             
-            alert('Terima kasih telah membayar, struk akan dikirim ke email Anda');
-            window.location.href = 'menu.php';
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+            document.getElementById('loadingOverlay').classList.add('flex');
+            
+            setTimeout(() => {
+                form.submit();
+            }, 2000);
         }
     </script>
 </body>

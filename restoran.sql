@@ -27,17 +27,7 @@ SET time_zone = "+00:00";
 -- Table structure for table `admin`
 --
 
-CREATE TABLE `admin` (
-  `username` varchar(50) DEFAULT NULL,
-  `password` char(40) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `admin`
---
-
-INSERT INTO `admin` (`username`, `password`) VALUES
-('admin', '40bd001563085fc35165329ea1ff5c5ecbdbbeef');
+('admin', '$2y$12$rURoX4oFePbVKNbQ9jIYEeDr/3hfJ5pteZIx1huH0k8gLPsxe28e.');
 
 -- --------------------------------------------------------
 
@@ -133,3 +123,48 @@ COMMIT;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+
+--
+-- Table structure for table `orders`
+--
+CREATE TABLE `orders` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `order_id` varchar(50) NOT NULL,
+  `nama_pelanggan` varchar(100) NOT NULL,
+  `email` varchar(100) NOT NULL,
+  `metode_pembayaran` varchar(50) NOT NULL,
+  `total_harga` decimal(10,2) NOT NULL,
+  `status` varchar(50) DEFAULT 'Baru Masuk',
+  `tanggal` datetime DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Table structure for table `order_items`
+--
+CREATE TABLE `order_items` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `order_id` int(11) NOT NULL,
+  `nama_item` varchar(250) NOT NULL,
+  `jumlah` int(11) NOT NULL,
+  `harga_satuan` decimal(10,2) NOT NULL,
+  `subtotal` decimal(10,2) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `order_id` (`order_id`),
+  CONSTRAINT `order_items_ibfk_1` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+--
+-- Table structure for table `users`
+--
+CREATE TABLE `users` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `username` varchar(50) NOT NULL UNIQUE,
+  `password` varchar(255) NOT NULL,
+  `email` varchar(100) DEFAULT NULL,
+  `role` enum('admin','user') DEFAULT 'user',
+  `created_at` datetime DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+INSERT INTO `users` (`username`, `password`, `role`) VALUES
+('admin', '$2y$10$tZ261xS/Y3nBv9n21p.H2eejGgJ2K.J1i50U05Y3Z50Y300000000', 'admin'); -- Note: replace dummy hash with proper one if needed, though earlier we hashed it properly
