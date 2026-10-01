@@ -1,0 +1,68 @@
+    body {
+        font-family: Arial, sans-serif;
+        color: #F1EFEC;
+        background-color: #E5D5D5; /* Lighter complementary background */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+    }
+
+    .container {
+        background-color: #B71C1C; /* Primary red shade */
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(183, 28, 28, 0.6); /* Using rgba with primary color */
+        text-align: center;
+        width: 450px;
+    }
+
+    h1 {
+        font-size: 24px;
+        margin-bottom: 10px;
+        color: #FFFFFF;
+    }
+
+    .login-form {
+        margin-top: 20px;
+    }
+
+    label {
+        display: block;
+        margin-bottom: 5px;
+        text-align: left;
+        color: #F1EFEC;
+    }
+
+    input {
+        width: 95%;
+        padding: 10px;
+        margin-bottom: 20px;
+        border: 1px solid #C62828; /* Secondary red shade */
+        border-radius: 5px;
+        background-color: #F1EFEC;
+    }
+
+    button {
+        padding: 10px 15px;
+        background-color: #C62828; /* Secondary red shade */
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: background-color 0.3s;
+    }
+
+    button:hover {
+        background-color: #8E0000; /* Darker shade for hover effect */
+    }
+
+    .error {
+        color: #FFCDD2; /* Light red for error text */
+        margin-bottom: 20px;
+        background-color: rgba(198, 40, 40, 0.6); /* Semi-transparent red */
+        padding: 8px;
+        border-radius: 4px;
+    }
