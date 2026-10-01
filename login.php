@@ -36,16 +36,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 }
 ?>
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Sinar Minang SMEA</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>body { font-family: 'Plus Jakarta Sans', sans-serif; }</style>
-</head>
+<?php
+$page_title = "Login - Sinar Minang SMEA";
+include 'includes/header.php';
+?>
 <body class="bg-slate-50 min-h-screen flex items-center justify-center p-4">
     <div class="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 border border-slate-100">
         <div class="text-center mb-8">

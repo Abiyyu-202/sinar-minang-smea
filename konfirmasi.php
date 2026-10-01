@@ -65,20 +65,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 ?>
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Checkout - Sinar Minang SMEA</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
-        .spinner { border-top-color: #ef4444; animation: spinner 1s linear infinite; }
-        @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    </style>
-</head>
+<?php
+$page_title = "Checkout - Sinar Minang SMEA";
+include 'includes/header.php';
+?>
 <body class="bg-slate-50 text-slate-800 min-h-screen">
 
     <nav class="bg-white/80 backdrop-blur-md sticky top-0 z-40 border-b border-slate-200">

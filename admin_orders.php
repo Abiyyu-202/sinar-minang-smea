@@ -22,16 +22,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 $query = "SELECT * FROM orders ORDER BY tanggal DESC";
 $result = mysqli_query($link, $query);
 ?>
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kelola Pesanan - Admin Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>body { font-family: 'Plus Jakarta Sans', sans-serif; }</style>
-</head>
+<?php
+$page_title = "Kelola Pesanan - Admin Dashboard";
+include 'includes/header.php';
+?>
 <body class="bg-slate-50 flex">
     
     <!-- Sidebar -->

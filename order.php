@@ -44,16 +44,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $_SESSION['total'] = $total;
 }
 ?>
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Keranjang Pesanan - Sinar Minang SMEA</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>body { font-family: 'Plus Jakarta Sans', sans-serif; }</style>
-</head>
+<?php
+$page_title = "Keranjang Pesanan - Sinar Minang SMEA";
+include 'includes/header.php';
+?>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
 
     <nav class="bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b border-slate-200">
